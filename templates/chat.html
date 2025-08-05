@@ -1,0 +1,156 @@
+<!-- templates/chat.html (교체) -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>{{ active.title }} Chat</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <style>
+    :root { --bg:#f6f7f9; --border:#e5e7ea; --text:#111; --muted:#6b7280; --brand:#4f46e5; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Arial; color:var(--text); background:var(--bg); }
+    .wrap { display:grid; grid-template-columns: 280px 1fr; height:100vh; }
+    /* Sidebar */
+    .side { background:#fff; border-right:1px solid var(--border); display:flex; flex-direction:column; }
+    .side h1 { font-size:18px; margin:16px; }
+    .conv-list { overflow:auto; padding:0 8px; flex:1; }
+    .conv { padding:10px 12px; margin:8px 0; border-radius:10px; cursor:pointer; display:flex; gap:8px; align-items:center; }
+    .conv:hover { background:#f3f4f6; }
+    .conv.active { background:#eef2ff; border:1px solid #c7d2fe; }
+    .new-btn { margin:12px; padding:10px 12px; width:calc(100% - 24px); border:0; border-radius:10px; background:var(--brand); color:#fff; font-weight:600; }
+    /* Main */
+    .main { display:flex; flex-direction:column; }
+    .topbar { background:#fff; border-bottom:1px solid var(--border); padding:12px 16px; display:flex; align-items:center; gap:12px; }
+    .title { font-size:18px; font-weight:700; flex:1; }
+    .title input { font-size:16px; padding:6px 8px; width:420px; }
+    .pill { font-size:12px; padding:4px 8px; border:1px solid var(--border); border-radius:999px; color:var(--muted); }
+    .log { padding:20px; overflow:auto; flex:1; }
+    .bubble { max-width: 800px; padding:12px 14px; border-radius:12px; margin:10px 0; white-space:pre-wrap; line-height:1.5; }
+    .user { background:#e5f3ff; }
+    .assistant { background:#fff; border:1px solid var(--border); }
+    .composer { background:#fff; border-top:1px solid var(--border); padding:12px 16px; }
+    .ibox { width:100%; border:1px solid var(--border); border-radius:12px; padding:12px; min-height:54px; resize:vertical; }
+    .hint { color:var(--muted); font-size:12px; margin-top:6px; }
+    .row { display:flex; align-items:center; gap:8px; margin-top:8px; }
+    .send { padding:10px 14px; border:0; background:var(--brand); color:#fff; border-radius:10px; font-weight:600; }
+    a { color:inherit; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Sidebar -->
+    <aside class="side">
+      <h1>맛집찾기 Chat</h1>
+      <div class="conv-list" id="convList">
+        {% for c in convs %}
+        <a class="conv {% if c.id == active.id %}active{% endif %}" href="/chat/{{ c.id }}">
+          <span>💬</span><div>{{ c.title }}</div>
+        </a>
+        {% endfor %}
+      </div>
+      <button class="new-btn" id="newChat">+ New Chat</button>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="topbar">
+        <div class="title">
+          <span id="titleText">{{ active.title }}</span>
+          <span id="renameWrap" style="display:none;">
+            <input id="titleInput" value="{{ active.title }}" />
+            <button id="titleSave" class="pill">Save</button>
+            <button id="titleCancel" class="pill">Cancel</button>
+          </span>
+        </div>
+        <span class="pill">gpt-4o-mini</span>
+        <button id="renameBtn" class="pill">Rename</button>
+        <a class="btn" href="/">처음 화면</a>
+      </div>
+
+      <div class="log" id="log">
+        {% for m in active.messages %}
+          {% if m.role != 'system' %}
+            <div class="bubble {{ m.role }}">{{ m.content }}</div>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <div class="composer">
+        <textarea id="msg" class="ibox" placeholder="Enter to send, Shift+Enter to wrap..."></textarea>
+        <div class="row">
+          <span class="hint">/ 로 명령, Shift+Enter 줄바꿈</span>
+          <button class="send" id="send">Send</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const cid = "{{ active.id }}";
+    const log = document.getElementById('log');
+    const msg = document.getElementById('msg');
+
+    function append(role, text) {
+      const div = document.createElement('div');
+      div.className = 'bubble ' + role;
+      div.textContent = text;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    document.getElementById('send').onclick = async () => {
+      const text = msg.value.trim();
+      if (!text) return;
+      append('user', text);
+      msg.value = '';
+      const fd = new FormData();
+      fd.append('message', text);
+      const res = await fetch(`/chat/${cid}/send`, { method: 'POST', body: fd });
+      const data = await res.json();
+      append('assistant', data.reply || '(응답 없음)');
+    };
+
+    // Enter 전송, Shift+Enter 줄바꿈
+    msg.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('send').click();
+      }
+    });
+
+    // New Chat
+    document.getElementById('newChat').onclick = async () => {
+      const fd = new FormData();
+      const res = await fetch('/chat/new', { method: 'POST', body: fd });
+      const data = await res.json();
+      location.href = `/chat/${data.cid}`;
+    };
+
+    // Rename
+    const renameBtn = document.getElementById('renameBtn');
+    const titleText = document.getElementById('titleText');
+    const wrap = document.getElementById('renameWrap');
+    const input = document.getElementById('titleInput');
+    const save = document.getElementById('titleSave');
+    const cancel = document.getElementById('titleCancel');
+
+    renameBtn.onclick = () => {
+      titleText.style.display = 'none';
+      wrap.style.display = 'inline-block';
+      input.focus();
+    };
+    cancel.onclick = () => {
+      wrap.style.display = 'none';
+      titleText.style.display = 'inline';
+      input.value = titleText.textContent;
+    };
+    save.onclick = async () => {
+      const fd = new FormData();
+      fd.append('title', input.value);
+      await fetch(`/chat/${cid}/rename`, { method: 'POST', body: fd });
+      titleText.textContent = input.value;
+      cancel.onclick();
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>가게 검색</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2>가게 이름을 입력하세요</h2>
+      {% if error %}<p style="color:#d00">{{ error }}</p>{% endif %}
+      <form method="post">
+        <input type="text" name="query" placeholder="예: 김밥천국 신림점" required>
+        <div style="margin-top:10px">
+          <button class="btn" type="submit">검색</button>
+          <a class="btn" href="/chat" style="margin-left:8px; background:#64748b;">대화형으로</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

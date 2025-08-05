@@ -1,0 +1,6 @@
+gunicorn==21.2.0
+Flask
+openai
+beautifulsoup4
+requests
+python-dotenv
