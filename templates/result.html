@@ -2,18 +2,18 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>{{ place.name }} 정보</title>
+  <title>{{ place.name or '가게 정보' }} 정보</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
 <body>
   <div class="container">
     <div class="card">
-      <h2>{{ place.name }}</h2>
-      <p><strong>주소:</strong> {{ place.address }}</p>
-      <p><strong>전화번호:</strong> {{ place.tel }}</p>
-      <p><strong>영업시간:</strong> {{ place.hours }}</p>
-      <p><strong>평점:</strong> {{ place.rating }}</p>
-      <p><strong>메뉴:</strong> {{ place.menu }}</p>
+      <h2>{{ place.name or '이름 없음' }}</h2>
+      <p><strong>주소:</strong> {{ place.address or '정보 없음' }}</p>
+      <p><strong>전화번호:</strong> {{ place.tel or '정보 없음' }}</p>
+      <p><strong>영업시간:</strong> {{ place.hours or '정보 없음' }}</p>
+      <p><strong>평점:</strong> {{ place.rating or '정보 없음' }}</p>
+      <p><strong>메뉴:</strong> {{ place.menu or '정보 없음' }}</p>
 
       {% if place.similar_places %}
       <h3>이 장소와 비슷한 맛집</h3>
@@ -22,13 +22,19 @@
           <li>{{ sp }}</li>
         {% endfor %}
       </ul>
+      {% else %}
+      <p><em>비슷한 맛집 정보 없음</em></p>
       {% endif %}
 
       <h3>블로그 요약</h3>
-      <pre>{{ summary }}</pre>
+      {% if summary %}
+        <pre>{{ summary }}</pre>
+      {% else %}
+        <p><em>블로그 요약 정보가 없습니다.</em></p>
+      {% endif %}
 
       <div style="margin-top:10px">
-        <a class="btn" href="/">다른 가게 검색</a>
+        <a class="btn" href="/">← 다른 가게 검색</a>
         <a class="btn" href="/chat" style="background:#64748b; margin-left:8px;">대화하기</a>
       </div>
     </div>
